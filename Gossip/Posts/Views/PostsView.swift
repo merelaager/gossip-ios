@@ -27,8 +27,11 @@ struct PostsView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if viewModel.posts.isEmpty {
                         ScrollView {
-                            Text("Postitusi pole.")
-                                .foregroundColor(.secondary)
+                            VStack {
+                                Text("Postitusi pole.")
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                         .refreshable {
                             Task {

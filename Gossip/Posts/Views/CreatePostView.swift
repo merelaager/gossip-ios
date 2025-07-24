@@ -132,6 +132,12 @@ struct CreatePostView: View {
                     }
                     .disabled(isSubmitting || title.isEmpty || !isContentOrImagePresent)
                 }
+                ToolbarItem(placement: .principal) {
+                    if isSubmitting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                    }
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Tühista") {
                         dismiss()
