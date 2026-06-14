@@ -38,8 +38,6 @@ struct User: Identifiable, Decodable, Encodable {
     let role: String
 }
 
-typealias FetchUserResponse = JSendResponse<User>
-
 enum AppAuthState {
     case loading
     case loggedIn
@@ -91,51 +89,18 @@ class SessionManager {
         if (!override && appLoadingState == .loggedOut) {
             return
         }
-        
-        // Artifical delay to display the splash screen for slightly longer.
-        // This prevents a confusing flash for fast network speeds.
-        // try? await Task.sleep(nanoseconds: 200_000_000)
 
         let url = Constants.baseURL.appendingPathComponent("account")
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                print("DEBUG: server did not receive an HTTP response")
-                print(response)
-                appLoadingState = .loggedOut
-                return
-            }
-
-            switch httpResponse.statusCode {
-            case 200..<300:
-                let loginResponse = try JSONDecoder().decode(
-                    FetchUserResponse.self,
-                    from: data
-                )
-                let userData = loginResponse.data
-
-                currentUser = User(
-                    id: userData.id,
-                    username: userData.username,
-                    role: userData.role
-                )
-                appLoadingState = .loggedIn
-                persistUser(self.currentUser!)
-                return
-            case 401:
-                currentUser = nil
-                appLoadingState = .loggedOut
-                UserDefaults.standard.removeObject(forKey: "currentUser")
-                return
-            case 500..<600:
-                print("DEBUG: Server error: \(httpResponse.statusCode)")
-            default:
-                print(
-                    "DEBUG: Unexpected status code: \(httpResponse.statusCode)"
-                )
-            }
+            let user: User = try await Networking.get(url, failType: NoContent.self)
+            currentUser = user
+            appLoadingState = .loggedIn
+            persistUser(user)
+            return
+        } catch let error as JSendFailError<NoContent> where error.statusCode == 401 {
+            currentUser = nil
+            UserDefaults.standard.removeObject(forKey: "currentUser")
         } catch {
             print("DEBUG: Request failed: \(error)")
         }

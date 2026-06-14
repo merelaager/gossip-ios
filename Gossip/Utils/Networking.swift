@@ -96,6 +96,19 @@ enum Networking {
         request.httpMethod = "DELETE"
         return try await perform(request, failType: failType)
     }
+
+    static func upload<T: Decodable, F: Decodable & Sendable>(
+        _ url: URL,
+        body: Data,
+        contentType: String,
+        failType: F.Type
+    ) async throws -> T {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        return try await perform(request, failType: failType)
+    }
     
     private static func perform<T: Decodable, F: Decodable & Sendable>(
         _ request: URLRequest,

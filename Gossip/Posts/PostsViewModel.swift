@@ -41,41 +41,21 @@ class PostsViewModel {
             currentPage = 1
         }
 
-        let urlString =
-            Constants.baseURL.absoluteString + "/posts" + endpoint
-            + "?page=\(currentPage)&limit=25"
-
-        guard let url = URL(string: urlString) else {
-            print(URLError(.badURL))
-            isLoading = false
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601WithFractionalSeconds
-
-            let jsendResponse = try decoder.decode(
-                JSendResponseTest.self,
-                from: data
+            let data = try await PostService.fetchPosts(
+                endpoint: endpoint,
+                page: currentPage,
+                limit: 25
             )
 
             if reset {
-                posts = jsendResponse.data.posts
+                posts = data.posts
             } else {
-                posts += jsendResponse.data.posts
+                posts += data.posts
             }
-            totalPages = jsendResponse.data.totalPages
+            totalPages = data.totalPages
             currentPage += 1
-
         } catch {
-            DispatchQueue.main.async {
-            }
             print("Error fetching posts: \(error)")
         }
 

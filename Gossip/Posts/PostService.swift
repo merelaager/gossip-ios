@@ -38,6 +38,10 @@ struct DeletePostFailResponseData: Decodable {
     let message: String
 }
 
+struct LikePostFailData: Decodable {
+    let message: String
+}
+
 struct UploadImageResponseData: Decodable {
     let fileName: String
 }
@@ -46,9 +50,6 @@ struct UploadImageFailResponseData: Decodable {
     let message: String
     let acceptedTypes: [String]?
 }
-
-typealias UploadImageResponse = JSendResponse<UploadImageResponseData>
-typealias UploadImageFailResponse = JSendResponse<UploadImageFailResponseData>
 
 struct UploadImage {
     let data: Data
@@ -65,12 +66,27 @@ struct PostService {
         )
         return response.post
     }
-    
-    static func uploadImage(_ image: UploadImage, to url: URL) async throws -> UploadImageResponse {
+
+    static func fetchPosts(endpoint: String, page: Int, limit: Int) async throws -> PostsData {
+        var components = URLComponents(
+            url: Constants.baseURL.appendingPathComponent("posts" + endpoint),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "page", value: String(page)),
+            URLQueryItem(name: "limit", value: String(limit)),
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        return try await Networking.get(url, failType: FetchPostFailResponseData.self)
+    }
+
+    private static func uploadImage(_ image: UploadImage) async throws -> String {
+        let url = Constants.baseURL.appendingPathComponent("posts/images")
         let boundary = UUID().uuidString
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
         body.append("--\(boundary)\r\n")
@@ -78,37 +94,21 @@ struct PostService {
         body.append("Content-Type: \(image.mimeType)\r\n\r\n")
         body.append(image.data)
         body.append("\r\n--\(boundary)--\r\n")
-        request.httpBody = body
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            print("DEBUG: Did not receive HTTP response")
-            throw URLError(.badServerResponse)
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            let failResponse: JSendResponse<UploadImageFailResponseData>
-            do {
-                failResponse = try JSONDecoder().decode(UploadImageFailResponse.self, from: data)
-            } catch let decodingError as DecodingError {
-                throw NetworkingError.decodingFailed(innerError: decodingError)
-            } catch {
-                throw NetworkingError.otherError(innerError: error)
-            }
-            throw JSendFailError(statusCode: httpResponse.statusCode, data: failResponse.data)
-        }
-
-        return try JSONDecoder().decode(UploadImageResponse.self, from: data)
+        let response: UploadImageResponseData = try await Networking.upload(
+            url,
+            body: body,
+            contentType: "multipart/form-data; boundary=\(boundary)",
+            failType: UploadImageFailResponseData.self
+        )
+        return response.fileName
     }
-    
+
     static func createPost(title: String, content: String?, image: UploadImage?) async throws -> String {
         var imageId: String? = nil
 
         if let image = image {
-            let uploadURL = Constants.baseURL.appendingPathComponent("posts/images")
-            let response = try await uploadImage(image, to: uploadURL)
-            imageId = response.data.fileName
+            imageId = try await uploadImage(image)
         }
 
         let url = Constants.baseURL.appendingPathComponent("posts")
@@ -118,29 +118,29 @@ struct PostService {
             body: body,
             failType: CreatePostFailResponseData.self
         )
-        
+
         return response.postId
     }
-    
+
     static func publishPost(postId: String) async throws {
         let url = Constants.baseURL.appendingPathComponent("posts/\(postId)")
         let body = PublishPostRequestBody(published: true)
         let _: NoContent = try await Networking.patch(url, body: body, failType: PublishPostFailResponseData.self)
     }
-    
+
     static func deletePost(postId: String) async throws {
         let url = Constants.baseURL.appendingPathComponent("posts/\(postId)")
         let _: NoContent = try await Networking.delete(url, failType: DeletePostFailResponseData.self)
     }
-    
+
     static func likePost(postId: String, userId: String) async throws {
         let url = Constants.baseURL.appendingPathComponent("posts/\(postId)/likes/\(userId)")
-        let _: NoContent = try await Networking.put(url, body: NoContent(), failType: DeletePostFailResponseData.self)
+        let _: NoContent = try await Networking.put(url, body: NoContent(), failType: LikePostFailData.self)
     }
-    
+
     static func unlikePost(postId: String, userId: String) async throws {
         let url = Constants.baseURL.appendingPathComponent("posts/\(postId)/likes/\(userId)")
-        let _: NoContent = try await Networking.delete(url, failType: DeletePostFailResponseData.self)
+        let _: NoContent = try await Networking.delete(url, failType: LikePostFailData.self)
     }
 }
 

@@ -6,16 +6,6 @@
 
 import Foundation
 
-struct JSendResponseTest: Decodable {
-    let status: String
-    let data: PostsData
-}
-
-struct FetchPostResponse: Decodable {
-    let status: String
-    let data: PostDataContainer
-}
-
 struct PostsData: Decodable {
     let posts: [Post]
     let currentPage: Int
