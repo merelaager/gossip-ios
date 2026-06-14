@@ -35,19 +35,22 @@ struct LoginView: View {
                 Text("Logi sisse")
                     .padding(.bottom)
                 
-                VStack {
-                    VStack(spacing: 8) {
-                        TextField("Kasutajanimi", text: $username)
-                            .autocorrectionDisabled()
-                            .autocapitalization(.none)
-                        Divider()
-                        SecureField("Parool", text: $password)
-                    }
-                    .padding(12)
-                    .foregroundColor(.gray)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
+                VStack(spacing: 0) {
+                    TextField("Kasutajanimi", text: $username)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    Divider()
+                        .padding(.leading, 16)
+                    SecureField("Parool", text: $password)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                 }
+                .background(
+                    Color(.secondarySystemGroupedBackground),
+                    in: .rect(cornerRadius: 22, style: .continuous)
+                )
                 .padding(.horizontal)
                 
                 if let errorMessage = errorMessage {
@@ -58,24 +61,18 @@ struct LoginView: View {
                         .padding(.bottom, 0)
                 }
                 
-                VStack {
-                    Button {
-                        Task {
-                            await signIn()
-                        }
-                    } label: {
-                        Text("Logi sisse")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 5)
+                Button {
+                    Task {
+                        await signIn()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
+                } label: {
+                    Text("Logi sisse")
+                        .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(!formIsValid)
-                .opacity(formIsValid ? 1.0 : 0.5)
+                .padding(.horizontal)
                 .padding(.vertical)
                 
                 Button {

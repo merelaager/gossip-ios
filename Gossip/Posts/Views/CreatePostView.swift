@@ -34,48 +34,37 @@ struct CreatePostView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Pealkiri")
-                        .font(.headline)
+        NavigationStack {
+            Form {
+                Section("Pealkiri") {
                     TextField("", text: $title)
-                        .padding(10)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
-                    
-                    if let errorMessage = errorMessage {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                    }
-                    
-                    Text("Sisu")
-                        .font(.headline)
-                    TextEditor(text: $content)
-                        .frame(height: 200)
-                        .padding(10)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
-                    
-                    Text("Pilt")
-                        .font(.headline)
+                }
 
-                    HStack {
-                        PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
-                            HStack {
-                                Image(systemName: "photo")
-                                Text("Vali pilt")
-                            }
-                            .padding()
-                            .background(Color.pink.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                        
-                        if selectedPhotoItem != nil {
-                            Button {
-                                selectedPhotoItem = nil
-                                selectedImage = nil
-                            } label: {
-                                Text("Eemalda pilt")
-                            }
+                if let errorMessage = errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Section("Sisu") {
+                    TextField("", text: $content, axis: .vertical)
+                        .lineLimit(8...20)
+                }
+
+                Section("Pilt") {
+                    PhotosPicker(
+                        selection: $selectedPhotoItem,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ) {
+                        Label("Vali pilt", systemImage: "photo")
+                    }
+
+                    if selectedPhotoItem != nil {
+                        Button("Eemalda pilt", role: .destructive) {
+                            selectedPhotoItem = nil
+                            selectedImage = nil
                         }
                     }
 
@@ -84,10 +73,10 @@ struct CreatePostView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(maxHeight: 200)
-                            .cornerRadius(8)
+                            .frame(maxWidth: .infinity)
+                            .listRowInsets(EdgeInsets())
                     }
                 }
-                .padding()
             }
             .onChange(of: selectedPhotoItem) {
                 if let selectedPhotoItem {
