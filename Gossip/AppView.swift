@@ -26,6 +26,11 @@ struct AppView: View {
             sessionManager.checkForCookies()
             await sessionManager.getCurrentUser()
         }
+        .onChange(of: sessionManager.appLoadingState) { _, newState in
+            if newState == .loggedIn {
+                Task { await Notifications.ensureRegistered() }
+            }
+        }
     }
 }
 

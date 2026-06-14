@@ -135,6 +135,10 @@ class SessionManager {
     }
 
     func signOut() {
+        if let userId = currentUser?.id {
+            Notifications.deleteToken(userId: userId)
+        }
+
         let cookieStorage = HTTPCookieStorage.shared
         cookieStorage.cookies?.forEach { cookie in
             cookieStorage.deleteCookie(cookie)
