@@ -28,8 +28,7 @@ struct PostContent: View {
                 Divider()
             }
             
-            Text(post.content ?? "")
-                .font(.body)
+            SelectableText(text: post.content ?? "")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
