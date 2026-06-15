@@ -8,6 +8,7 @@ import SwiftUI
 
 struct AppView: View {
     @Environment(SessionManager.self) private var sessionManager
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -28,6 +29,11 @@ struct AppView: View {
         }
         .onChange(of: sessionManager.appLoadingState) { _, newState in
             if newState == .loggedIn {
+                Task { await Notifications.ensureRegistered() }
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active && sessionManager.appLoadingState == .loggedIn {
                 Task { await Notifications.ensureRegistered() }
             }
         }

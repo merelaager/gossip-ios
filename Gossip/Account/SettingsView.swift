@@ -16,7 +16,7 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
     @State private var username = ""
     
-    @State private var notificationStatus: UNAuthorizationStatus = .authorized
+    @State private var notificationStatus: UNAuthorizationStatus?
 
     @Environment(
         \.scenePhase
@@ -180,31 +180,17 @@ struct SettingsView: View {
                     
                     if notificationStatus == .denied || notificationStatus == .notDetermined {
                         Section {
-                            Button(
-                                "Luba teavitused"
-                            ) {
-                                Task {
-                                    await enableNotifications()
-                                }
+                            Button("Luba teavitused") {
+                                Task { await enableNotifications() }
                             }
-                            .tint(
-                                .blue
-                            )
+                            .tint(.blue)
                         } header: {
-                            Text(
-                                "Teavitused"
-                            )
+                            Text("Teavitused")
                         } footer: {
                             if notificationStatus == .denied {
-                                Text(
-                                    "Teavitused saad sisse lülitada iOS-i seadetes."
-                                )
-                                .font(
-                                    .footnote
-                                )
-                                .foregroundColor(
-                                    .secondary
-                                )
+                                Text("Teavitused saad sisse lülitada iOS-i seadetes.")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
                             }
                         }
                     }
@@ -220,18 +206,12 @@ struct SettingsView: View {
             NewPasswordView()
         }
         .task {
-            await checkNotificationPermissionStatus()
+            notificationStatus = await Notifications.currentStatus()
         }
-        .onChange(
-            of: scenePhase
-        ) {
-            _,
-            newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 Task {
-                    await Notifications
-                        .ensureRegistered()
-                    await checkNotificationPermissionStatus()
+                    notificationStatus = await Notifications.currentStatus()
                 }
             }
         }
@@ -256,27 +236,15 @@ struct SettingsView: View {
         }
     }
     
-    func checkNotificationPermissionStatus() async {
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        notificationStatus = settings.authorizationStatus
-    }
-    
     func enableNotifications() async {
         switch notificationStatus {
         case .notDetermined:
-            await Notifications
-                .ensureRegistered()
-            await checkNotificationPermissionStatus()
+            await Notifications.ensureRegistered()
+            notificationStatus = await Notifications.currentStatus()
         case .denied:
-            if let url = URL(
-                string: UIApplication.openNotificationSettingsURLString
-            ) {
-                await MainActor
-                    .run {
-                        UIApplication.shared
-                            .open(
-                                url
-                            )
+            if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                await MainActor.run {
+                    UIApplication.shared.open(url)
                 }
             }
         default:
