@@ -12,6 +12,10 @@ struct SubmitTokenFailResponseData: Decodable {
     let message: String
 }
 
+enum NotificationDestination: Sendable {
+    case moderation
+}
+
 enum Notifications {
     static func currentStatus() async -> UNAuthorizationStatus {
         let settings = await UNUserNotificationCenter.current().notificationSettings()

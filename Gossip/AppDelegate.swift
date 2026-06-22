@@ -5,13 +5,16 @@
 //
 
 import SwiftUI
-import UserNotifications
+@preconcurrency import UserNotifications
 
+@MainActor
+@Observable
 class AppDelegate: NSObject, UIApplicationDelegate,
-                   UNUserNotificationCenterDelegate
+                   @preconcurrency UNUserNotificationCenterDelegate
 {
     var app: GossipApp?
     var sessionManager: SessionManager?
+    var pendingDestination: NotificationDestination?
 
     func application(
         _ application: UIApplication,
@@ -20,6 +23,20 @@ class AppDelegate: NSObject, UIApplicationDelegate,
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let type = response.notification.request.content.userInfo["type"] as? String
+        if type == "moderation" {
+            Task { @MainActor in
+                self.pendingDestination = .moderation
+            }
+        }
+        completionHandler()
     }
 
     func application(
