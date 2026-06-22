@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(AppDelegate.self) private var appDelegate
 
     @State private var selectedTab: String = "feed"
+    @State private var moderationViewModel = PostsViewModel(endpoint: "/waitlist")
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -27,7 +28,7 @@ struct ContentView: View {
             }
             if (sessionManager.currentUser?.role == "ADMIN") {
                 Tab("Ootel", systemImage: "document.badge.clock", value: "moderation") {
-                    PostsView(title: "Ootel", viewModel: PostsViewModel(endpoint: "/waitlist"))
+                    PostsView(title: "Ootel", viewModel: moderationViewModel)
                 }
             }
             Tab("Konto", systemImage: "person.crop.circle", value: "account") {
@@ -39,6 +40,7 @@ struct ContentView: View {
             if new == .moderation {
                 selectedTab = "moderation"
                 appDelegate.pendingDestination = nil
+                Task { await moderationViewModel.resetAndFetch() }
             }
         }
     }
