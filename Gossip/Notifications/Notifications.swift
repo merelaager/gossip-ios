@@ -18,6 +18,12 @@ enum Notifications {
         return settings.authorizationStatus
     }
 
+    static func clearDelivered() {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllDeliveredNotifications()
+        Task { try? await center.setBadgeCount(0) }
+    }
+
     static func ensureRegistered() async {
         let center = UNUserNotificationCenter.current()
         let status = await center.notificationSettings().authorizationStatus

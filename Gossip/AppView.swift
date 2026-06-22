@@ -32,9 +32,12 @@ struct AppView: View {
                 Task { await Notifications.ensureRegistered() }
             }
         }
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active && sessionManager.appLoadingState == .loggedIn {
-                Task { await Notifications.ensureRegistered() }
+        .onChange(of: scenePhase, initial: true) { _, newPhase in
+            if newPhase == .active {
+                Notifications.clearDelivered()
+                if sessionManager.appLoadingState == .loggedIn {
+                    Task { await Notifications.ensureRegistered() }
+                }
             }
         }
     }
