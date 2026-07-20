@@ -13,13 +13,22 @@ struct AppVersion: Decodable {
 @MainActor
 @Observable
 final class AppUpdateModel {
-    private(set) var updateAvailable = false
     private(set) var latestVersion: String?
+    private(set) var bannerDismissed = false
 
     private let dismissedVersionKey = "dismissedUpdateVersion"
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+    }
+
+    var isUpdateAvailable: Bool {
+        guard let latestVersion else { return false }
+        return latestVersion.compare(currentVersion, options: .numeric) == .orderedDescending
+    }
+
+    var bannerVisible: Bool {
+        isUpdateAvailable && !bannerDismissed
     }
 
     func check() async {
@@ -30,28 +39,22 @@ final class AppUpdateModel {
         do {
             let latest: AppVersion = try await Networking.get(url, failType: NoContent.self)
             latestVersion = latest.version
-            updateAvailable = shouldPrompt(for: latest.version)
+            bannerDismissed = wasDismissed(latest.version)
         } catch {
             print("DEBUG: App version check failed: \(error)")
         }
     }
 
-    func dismiss() {
+    func dismissBanner() {
         guard let latestVersion else { return }
         UserDefaults.standard.set(latestVersion, forKey: dismissedVersionKey)
-        updateAvailable = false
+        bannerDismissed = true
     }
 
-    private func shouldPrompt(for latest: String) -> Bool {
-        guard latest.compare(currentVersion, options: .numeric) == .orderedDescending else {
+    private func wasDismissed(_ version: String) -> Bool {
+        guard let dismissed = UserDefaults.standard.string(forKey: dismissedVersionKey) else {
             return false
         }
-
-        if let dismissed = UserDefaults.standard.string(forKey: dismissedVersionKey),
-           latest.compare(dismissed, options: .numeric) != .orderedDescending {
-            return false
-        }
-
-        return true
+        return version.compare(dismissed, options: .numeric) != .orderedDescending
     }
 }

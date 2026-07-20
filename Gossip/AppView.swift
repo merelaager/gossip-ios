@@ -23,13 +23,14 @@ struct AppView: View {
                 LoginView()
             }
         }
+        .environment(updateModel)
         .safeAreaInset(edge: .top) {
-            if updateModel.updateAvailable, sessionManager.appLoadingState != .loading {
-                UpdateBanner(onDismiss: updateModel.dismiss)
+            if updateModel.bannerVisible, sessionManager.appLoadingState != .loading {
+                UpdateBanner(onDismiss: updateModel.dismissBanner)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .animation(.default, value: updateModel.updateAvailable)
+        .animation(.default, value: updateModel.bannerVisible)
         .task {
             // Cookie check to avoid displaying
             // the splash screen for non-logged in users.

@@ -31,7 +31,7 @@ struct ContentView: View {
                     PostsView(title: "Ootel", viewModel: moderationViewModel)
                 }
             }
-            Tab("Konto", systemImage: "person.crop.circle", value: "account") {
+            Tab("Sätted", systemImage: "gear", value: "account") {
                 SettingsView()
             }
         }
@@ -50,5 +50,6 @@ struct ContentView: View {
     let sessionManager = SessionManager()
     ContentView()
         .environment(sessionManager)
+        .environment(AppUpdateModel())
         .task { await sessionManager.getCurrentUser() }
 }

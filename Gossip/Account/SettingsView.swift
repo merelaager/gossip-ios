@@ -11,11 +11,9 @@ struct SettingsView: View {
     @Environment(
         SessionManager.self
     ) private var sessionManager
-    
-    @State private var showChangePassword = false
-    @State private var showDeleteConfirmation = false
-    @State private var username = ""
-    
+
+    @Environment(AppUpdateModel.self) private var updateModel
+
     @State private var notificationStatus: UNAuthorizationStatus?
 
     @Environment(
@@ -27,27 +25,31 @@ struct SettingsView: View {
             NavigationStack {
                 Form {
                     Section {
-                        VStack(
-                            alignment: .leading
-                        ) {
-                            Text(
-                                sessionManager.currentUser?.username
-                                ?? "Anonüümne kasutaja"
-                            )
-                            if sessionManager.currentUser?.role != "READER" {
+                        NavigationLink {
+                            AccountView()
+                        } label: {
+                            VStack(
+                                alignment: .leading
+                            ) {
                                 Text(
-                                    "Postitamine lubatud"
+                                    sessionManager.currentUser?.username
+                                    ?? "Anonüümne kasutaja"
                                 )
-                                .font(
-                                    .footnote
-                                )
-                            } else {
-                                Text(
-                                    "Postitamine keelatud"
-                                )
-                                .font(
-                                    .footnote
-                                )
+                                if sessionManager.currentUser?.role != "READER" {
+                                    Text(
+                                        "Postitamine lubatud"
+                                    )
+                                    .font(
+                                        .footnote
+                                    )
+                                } else {
+                                    Text(
+                                        "Postitamine keelatud"
+                                    )
+                                    .font(
+                                        .footnote
+                                    )
+                                }
                             }
                         }
                     } footer: {
@@ -95,89 +97,6 @@ struct SettingsView: View {
                         }
                     }
                     
-                    Section {
-                        Button(
-                            "Vaheta salasõna"
-                        ) {
-                            showChangePassword
-                                .toggle()
-                        }
-                        .tint(
-                            .blue
-                        )
-                        Button(
-                            "Kustuta konto",
-                            role: .destructive
-                        ) {
-                            showDeleteConfirmation = true
-                        }
-                        .alert(
-                            "Kustuta konto?",
-                            isPresented: $showDeleteConfirmation
-                        ) {
-                            TextField(
-                                text: $username
-                            ) {
-                                Text(
-                                    "Kasutajanimi"
-                                )
-                            }
-                            Button(
-                                "Kustuta konto",
-                                role: .destructive
-                            ) {
-                                Task {
-                                    await deleteAccount()
-                                }
-                            }
-                            .disabled(
-                                sessionManager.currentUser?.username != username
-                            )
-                            Button(
-                                "Tühista",
-                                role: .cancel
-                            ) {
-                            }
-                        } message: {
-                            Text(
-                                "Konto kustutamiseks sisesta oma kasutajanimi."
-                            )
-                        }
-                        .tint(
-                            .blue
-                        )
-                    } header: {
-                        Text(
-                            "Konto"
-                        )
-                    } footer: {
-                        Text(
-                            "Koos kontoga kustutatakse ka kõik sinu postitused. Sinu kontot ega postitusi taastada ei saa."
-                        )
-                    }
-                    
-                    Section {
-                        Button(
-                            "Logi välja"
-                        ) {
-                            sessionManager
-                                .signOut()
-                        }
-                        .tint(
-                            .blue
-                        )
-                    } footer: {
-                        Text(
-                            "Pärast rakendusest väljalogimist pead sa postituste nägemiseks uuesti sisse logima."
-                        )
-                        .font(
-                            .footnote
-                        )
-                        .foregroundColor(
-                            .secondary
-                        )
-                    }
-
                     if let notificationStatus {
                         Section {
                             if notificationStatus == .denied || notificationStatus == .notDetermined {
@@ -205,16 +124,26 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    Section {
+                        LabeledContent("Versioon", value: updateModel.currentVersion)
+                    } footer: {
+                        if updateModel.isUpdateAvailable, let latest = updateModel.latestVersion {
+                            Link(destination: Constants.appStoreURL) {
+                                HStack(spacing: 4) {
+                                    Text("Saadaval on uus versioon (\(latest))")
+                                    Image(systemName: "arrow.up.right.square")
+                                }
+                                .font(.footnote)
+                                .foregroundColor(.blue)
+                            }
+                        }
+                    }
                 }
                 .navigationTitle(
-                    "Konto"
+                    "Sätted"
                 )
             }
-        }
-        .sheet(
-            isPresented: $showChangePassword
-        ) {
-            NewPasswordView()
         }
         .task {
             notificationStatus = await Notifications.currentStatus()
@@ -225,25 +154,6 @@ struct SettingsView: View {
                     notificationStatus = await Notifications.currentStatus()
                 }
             }
-        }
-    }
-    
-    func deleteAccount() async {
-        if let userId = sessionManager.currentUser?.id {
-            Notifications
-                .deleteToken(
-                    userId: userId
-                )
-        }
-        do {
-            try await AccountService
-                .deleteAccount()
-            sessionManager
-                .signOut()
-        } catch {
-            print(
-                "DEBUG: \(error)"
-            )
         }
     }
     
@@ -274,6 +184,7 @@ struct SettingsView: View {
         .environment(
             SessionManager()
         )
+        .environment(AppUpdateModel())
         .tint(
             .pink
         )
