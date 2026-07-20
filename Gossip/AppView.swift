@@ -10,6 +10,8 @@ struct AppView: View {
     @Environment(SessionManager.self) private var sessionManager
     @Environment(\.scenePhase) private var scenePhase
 
+    @State private var updateModel = AppUpdateModel()
+
     var body: some View {
         Group {
             switch sessionManager.appLoadingState {
@@ -21,11 +23,21 @@ struct AppView: View {
                 LoginView()
             }
         }
+        .safeAreaInset(edge: .top) {
+            if updateModel.updateAvailable, sessionManager.appLoadingState != .loading {
+                UpdateBanner(onDismiss: updateModel.dismiss)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.default, value: updateModel.updateAvailable)
         .task {
             // Cookie check to avoid displaying
             // the splash screen for non-logged in users.
             sessionManager.checkForCookies()
             await sessionManager.getCurrentUser()
+        }
+        .task {
+            await updateModel.check()
         }
         .onChange(of: sessionManager.appLoadingState) { _, newState in
             if newState == .loggedIn {
