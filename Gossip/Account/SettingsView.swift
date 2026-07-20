@@ -131,7 +131,7 @@ struct SettingsView: View {
                         if updateModel.isUpdateAvailable, let latest = updateModel.latestVersion {
                             Link(destination: Constants.appStoreURL) {
                                 HStack(spacing: 4) {
-                                    Text("Saadaval on uus versioon (\(latest))")
+                                    Text("Lae alla uus versioon (\(latest))")
                                     Image(systemName: "arrow.up.right.square")
                                 }
                                 .font(.footnote)
