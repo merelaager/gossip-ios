@@ -128,8 +128,14 @@ struct CreatePostView: View {
                     }
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Tühista") {
-                        dismiss()
+                    if #available(iOS 26.0, *) {
+                        Button(role: .close) {
+                            dismiss()
+                        }
+                    } else {
+                        Button("Tühista") {
+                            dismiss()
+                        }
                     }
                 }
             }

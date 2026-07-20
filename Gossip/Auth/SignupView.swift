@@ -8,9 +8,8 @@ import SwiftUI
 
 struct SignupView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) var colorScheme
     @Environment(SessionManager.self) private var sessionManager
-    
+
     let token: String
     let givenUsername: String?
 
@@ -18,120 +17,85 @@ struct SignupView: View {
     @State private var password = ""
     @State private var passwordConfirm = ""
     @State private var errorMessage: String?
-    
+
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack {
-                    VStack {
+        NavigationStack {
+            Form {
+                Section {
+                    VStack(spacing: 8) {
                         Image(systemName: "person.crop.circle")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 60, height: 60)
-                            .foregroundColor(.pink)
-                            .padding(.top, 8)
-                        
+                            .foregroundStyle(.pink)
+
                         Text("Loo konto")
                             .font(.title)
                             .fontWeight(.bold)
-                            .padding(.bottom, 4)
-                        
+
                         Text("Gossipi nägemiseks ja postitamiseks on vajalik konto. Sinu kasutajat näevad ainult kasvatajad.")
-                            .padding(.horizontal)
+                            .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        if let gu = givenUsername {
-                            Text("Kasutajanimi".uppercased())
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal)
-                                .padding(.top, 20)
-                            
-                            Text(gu)
-                                .padding(10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .foregroundColor(.gray)
-                                .background(Color(colorScheme == .dark ? .systemGray5 : .systemGray6))
-                                .cornerRadius(10)
-                            
-                            Text("Sa ei saa oma kasutajanime valida, kuna su konto peab olema anonüümne. Jäta see kasutajanimi meelde.")
-                                .font(.footnote)
-                                .foregroundColor(.gray)
-                                .padding(.horizontal)
-                                .padding(.top, 4)
-                        } else {
-                            TextField("Kasutajanimi", text: $username)
-                                .autocorrectionDisabled()
-                                .autocapitalization(.none)
-                                .padding(10)
-                                .foregroundColor(.gray)
-                                .background(Color(colorScheme == .dark ? .systemGray5 : .systemGray6))
-                                .cornerRadius(10)
-                            
-                            Text("Kasutajanimi tohib sisaldada ainult ladina tähestiku tähti, numbreid, punkte ja allkriipse.")
-                                .font(.footnote)
-                                .foregroundColor(.gray)
-                                .padding(.horizontal)
-                                .padding(.top, 4)
-                        }
+                    .listRowBackground(Color.clear)
+                }
+
+                Section {
+                    if let gu = givenUsername {
+                        LabeledContent("Kasutajanimi", value: gu)
+                    } else {
+                        TextField("Kasutajanimi", text: $username)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        VStack {
-                            SecureField("Salasõna", text: $password)
-                            Divider()
-                            SecureField("Korda salasõna", text: $passwordConfirm)
-                        }
-                        .padding(10)
-                        .foregroundColor(.gray)
-                        .background(Color(colorScheme == .dark ? .systemGray5 : .systemGray6))
-                        .cornerRadius(10)
-                        
-                        Text("Salasõna peab olema vähemalt 8 tähemärki pikk ja sisaldama vähemalt ühte numbrit, ühte suurt tähte ja ühte väikest tähte.")
-                            .font(.footnote)
-                            .foregroundColor(.gray)
-                            .padding(.horizontal)
-                            .padding(.top, 4)
+                } footer: {
+                    if givenUsername != nil {
+                        Text("Sa ei saa oma kasutajanime valida, kuna su konto peab olema anonüümne. Jäta see kasutajanimi meelde.")
+                    } else {
+                        Text("Kasutajanimi tohib sisaldada ainult ladina tähestiku tähti, numbreid, punkte ja allkriipse.")
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                    
-                    if let errorMessage = errorMessage {
+                }
+
+                Section {
+                    SecureField("Salasõna", text: $password)
+                    SecureField("Korda salasõna", text: $passwordConfirm)
+                } footer: {
+                    Text("Salasõna peab olema vähemalt 8 tähemärki pikk.")
+                }
+
+                if let errorMessage {
+                    Section {
                         Text(errorMessage)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .foregroundStyle(.red)
                     }
-                    
-                    VStack {
-                        Button {
-                            Task { await signUp() }
-                        } label: {
-                            Text("Loo konto")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 5)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                        .disabled(password.isEmpty || password != passwordConfirm)
+                }
+
+                Section {
+                    Button {
+                        Task { await signUp() }
+                    } label: {
+                        Text("Loo konto")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal)
-                    .padding(.top)
-                    .padding(.bottom, 10)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(password.count < 8 || password != passwordConfirm)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Tühista") {
-                        dismiss()
+                    if #available(iOS 26.0, *) {
+                        Button(role: .close) {
+                            dismiss()
+                        }
+                    } else {
+                        Button("Tühista") {
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -155,10 +119,6 @@ private extension SignupView {
             print("DEBUG: \(error)")
             errorMessage = "Viga serveriga ühenduse loomisel."
         }
-    }
-    
-    var formIsValid: Bool {
-        return !username.isEmpty && !password.isEmpty
     }
 }
 

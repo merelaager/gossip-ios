@@ -34,7 +34,7 @@ struct NewPasswordView: View {
                       Text("Vaheta salasõna")
                     } footer: {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Salasõna peab olema vähemalt 8 tähemärki pikk ja sisaldama vähemalt ühte numbrit, ühte suurt tähte ja ühte väikest tähte.")
+                            Text("Salasõna peab olema vähemalt 8 tähemärki pikk.")
                             Text("Võimalusel lase Apple'i „Passwords“ rakendusel salasõna genereerida.")
                         }
                     }
@@ -54,7 +54,7 @@ struct NewPasswordView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .cornerRadius(14)
-                .disabled(newPassword.isEmpty || newPassword != repeatPassword)
+                .disabled(newPassword.count < 8 || newPassword != repeatPassword)
                 .padding(.horizontal, 36)
                 .padding(.top, 16)
                 .padding(.bottom, 36)
@@ -62,8 +62,14 @@ struct NewPasswordView: View {
             .background(Color(UIColor.systemGroupedBackground))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Tühista") {
-                        dismiss()
+                    if #available(iOS 26.0, *) {
+                        Button(role: .close) {
+                            dismiss()
+                        }
+                    } else {
+                        Button("Tühista") {
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -75,22 +81,12 @@ struct NewPasswordView: View {
         }
     }
     
-    func isValidPassword(_ password: String) -> Bool {
-        let pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$"
-        return password.range(of: pattern, options: .regularExpression) != nil
-    }
-    
     func changePassword() async {
         if (newPassword.count < 8) {
             errorMessage = "Salasõna peab olema vähemalt 8 tähemärki pikk!"
             return
         }
-        
-        if !isValidPassword(newPassword) {
-            errorMessage = "Salasõna peab sisaldama vähemalt ühte väikest tähte, ühte suurt tähte ja ühte numbrit!"
-            return
-        }
-        
+
         do {
             try await AccountService.changePassword(newPassword: newPassword)
             showSuccessAlert = true
