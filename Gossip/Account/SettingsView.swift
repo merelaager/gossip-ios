@@ -177,18 +177,29 @@ struct SettingsView: View {
                             .secondary
                         )
                     }
-                    
-                    if notificationStatus == .denied || notificationStatus == .notDetermined {
+
+                    if let notificationStatus {
                         Section {
-                            Button("Luba teavitused") {
-                                Task { await enableNotifications() }
+                            if notificationStatus == .denied || notificationStatus == .notDetermined {
+                                Button("Luba teavitused") {
+                                    Task { await enableNotifications() }
+                                }
+                                .tint(.blue)
+                            } else {
+                                Button("Taasta teavitused") {
+                                    Task { await restoreNotifications() }
+                                }
+                                .tint(.blue)
                             }
-                            .tint(.blue)
                         } header: {
                             Text("Teavitused")
                         } footer: {
                             if notificationStatus == .denied {
                                 Text("Teavitused saad sisse lülitada iOS-i seadetes.")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            } else if notificationStatus != .notDetermined {
+                                Text("Aitab siis, kui sulle teavitused kohale ei jõua.")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                             }
@@ -236,6 +247,11 @@ struct SettingsView: View {
         }
     }
     
+    func restoreNotifications() async {
+        guard let userId = sessionManager.currentUser?.id else { return }
+        await Notifications.resyncToken(userId: userId)
+    }
+
     func enableNotifications() async {
         switch notificationStatus {
         case .notDetermined:

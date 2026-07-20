@@ -63,6 +63,11 @@ enum Notifications {
         }
     }
 
+    static func resyncToken(userId: String) async {
+        UserDefaults.standard.removeObject(forKey: "lastSentToken:\(userId)")
+        await ensureRegistered()
+    }
+
     static func deleteToken(userId: String) {
         let cacheKey = "lastSentToken:\(userId)"
         guard let token = UserDefaults.standard.string(forKey: cacheKey) else {
